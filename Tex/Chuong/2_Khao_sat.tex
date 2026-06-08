@@ -1,0 +1,94 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\section{Đặc thù an ninh của hệ thống IoT và băng rộng}
+Hệ thống IoT và băng rộng kết hợp nhiều lớp tài sản có mức độ kiểm soát khác nhau. Ở phía người dùng, CPE, router và ONT xử lý NAT, DHCP, DNS proxy, Wi-Fi, quản trị web, telnet/SSH, UPnP và đôi khi cả lưu trữ USB hoặc VPN. Ở phía nhà mạng, ACS/USP, OSS/BSS, AAA, hệ thống cấp phát cấu hình, kho firmware và SIEM tạo thành mặt phẳng quản trị. Mỗi lớp đều có bề mặt tấn công riêng nhưng có quan hệ phụ thuộc lẫn nhau. Một lỗi xác thực trên router có thể dẫn đến chiếm quyền thiết bị; một lỗi trong ACS có thể mở rộng thành thay đổi cấu hình hàng loạt; một pipeline OTA yếu có thể bị lợi dụng để phân phối firmware độc hại.
+
+Các ràng buộc vận hành làm cho quản lý an ninh khó hơn. Thiết bị thường được triển khai trong môi trường không tin cậy, người dùng ít cập nhật, nhà mạng khó can thiệp vật lý, và cấu hình firmware khác nhau theo lô sản xuất. Do đó, quy trình an ninh phải ưu tiên khả năng tự động hóa, khả năng kiểm chứng từ xa, cơ chế rollback an toàn, phân tầng rủi ro và giám sát liên tục.
+
+\section{Chuẩn và khung tham chiếu}
+NIST SP 800-30 cung cấp cách tiếp cận đánh giá rủi ro dựa trên nhận diện mối đe dọa, lỗ hổng, khả năng xảy ra, tác động và mức rủi ro tổng hợp \cite{nist80030}. Với hệ thống IoT/băng rộng, chuẩn này phù hợp để liên kết dữ liệu tài sản, CVE, CVSS, mức phơi nhiễm Internet, vai trò thiết bị và tác động dịch vụ.
+
+NIST SP 800-61 mô tả vòng đời phản ứng sự cố gồm chuẩn bị, phát hiện và phân tích, ngăn chặn, xóa bỏ, phục hồi và rút kinh nghiệm \cite{nist80061}. ISO/IEC 27035 cũng nhấn mạnh quản lý sự cố theo tổ chức, bao gồm chính sách, phân công vai trò, báo cáo, đánh giá, phản hồi và cải tiến \cite{iso27035}. Hai chuẩn này bổ sung cho nhau khi xây dựng playbook cho botnet IoT, khai thác zero-day trên CPE hoặc sự cố phân phối firmware.
+
+MITRE ATT\&CK for IoT cung cấp ngôn ngữ chung để mô tả chiến thuật và kỹ thuật tấn công như truy cập ban đầu, thực thi, duy trì hiện diện, leo thang đặc quyền, né tránh phòng thủ, thu thập thông tin và tác động \cite{mitreattackiot}. Khi kết hợp với STRIDE, DREAD hoặc PASTA, tổ chức có thể chuyển từ mô tả kiến trúc sang danh sách kịch bản tấn công có thể kiểm thử.
+
+Các chuẩn trên được sử dụng theo vai trò bổ sung thay vì thay thế lẫn nhau. NIST SP 800-30 cung cấp ngôn ngữ rủi ro để xác định khả năng xảy ra và tác động; NIST SP 800-61 và ISO/IEC 27035 chuyển rủi ro thành năng lực phản ứng khi sự cố xảy ra; MITRE ATT\&CK for IoT mô tả chi tiết hành vi của đối thủ để xây dựng luật phát hiện, playbook và kiểm thử kiểm soát.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|p{3.1cm}|p{4.5cm}|p{5.2cm}|}
+\hline
+\textbf{Chuẩn/khung} & \textbf{Vai trò chính} & \textbf{Cách áp dụng cho IoT/băng rộng} \\ \hline
+NIST SP 800-30 & Đánh giá rủi ro dựa trên mối đe dọa, lỗ hổng, khả năng và tác động. & Ưu tiên lỗ hổng theo CVE/CVSS, mức phơi nhiễm WAN, số lượng thuê bao và vai trò thiết bị. \\ \hline
+NIST SP 800-61 & Chuẩn hóa vòng đời phản ứng sự cố. & Xây dựng playbook botnet, lộ ACS, khai thác zero-day và lỗi OTA. \\ \hline
+ISO/IEC 27035 & Tổ chức quản lý sự cố, vai trò, báo cáo và cải tiến. & Phân tách trách nhiệm giữa SOC, NOC, helpdesk, đội firmware và nhà cung cấp thiết bị. \\ \hline
+MITRE ATT\&CK for IoT & Mô tả chiến thuật và kỹ thuật tấn công IoT. & Ánh xạ hành vi quét telnet, brute force, duy trì hiện diện, C2 và DDoS vào rule SIEM. \\ \hline
+\end{tabular}
+\caption{Vai trò và cách áp dụng các chuẩn, khung tham chiếu cho IoT và băng rộng}
+\label{tab:security-standards-frameworks}
+\end{table}
+
+\section{Khảo sát công trình theo năm trụ cột}
+Tệp khảo sát nguồn phân loại 25 công trình nghiên cứu thành năm nhóm. Nhóm đánh giá lỗ hổng tập trung vào phân tích firmware, giả lập động và tương quan CVE. Các hướng như FirmAE, AutoFirm và khung phát hiện thời gian thực cho thấy nhu cầu kết hợp phân tích tĩnh, phân tích động, fingerprint thư viện và giám sát mạng \cite{kim2020firmae,autofirm2024,hybridcve2024}. Nhóm này đặc biệt phù hợp với router SOHO, CPE và gateway băng rộng.
+
+Việc phân loại không chỉ nhằm thống kê tài liệu mà còn giúp xác định vai trò của từng nhóm nghiên cứu trong vòng đời quản lý an ninh. Bảng \ref{tab:literature-classification} tóm tắt cách ánh xạ 25 công trình vào năm trụ cột, xu hướng kỹ thuật nổi bật và khoảng trống còn lại khi áp dụng cho môi trường CPE, router, ONT và backend ISP.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{2.8cm}|p{4.1cm}|p{4.2cm}|}
+\hline
+\textbf{Trụ cột}  & \textbf{Xu hướng chính} & \textbf{Khoảng trống rút ra} \\ \hline
+Đánh giá lỗ hổng  & Phân tích tĩnh firmware, giả lập động, nhận diện thư viện tái sử dụng, tương quan CVE/CVSS. & Thiếu benchmark firmware có nhãn, khó giả lập đầy đủ dịch vụ phần cứng và cấu hình nhà mạng. \\ \hline
+Mô hình hóa mối đe dọa & STRIDE, DREAD, PASTA, MITRE ATT\&CK, tự động sinh attack graph từ topo và cấu hình. & Mô hình thủ công khó mở rộng, thiếu dữ liệu chuẩn hóa về ranh giới LAN, WAN, ACS và backend. \\ \hline
+Log và kiểm toán  & Chuẩn hóa syslog, telemetry nhẹ, tương quan SIEM và phát hiện bất thường. & Thiết bị tài nguyên hạn chế sinh log ít, thiếu đồng bộ thời gian và khó bảo đảm tính toàn vẹn log. \\ \hline
+Phản ứng sự cố  & Taxonomy sự cố IoT, playbook botnet, SOAR, ra quyết định hai tầng giữa SOC/NOC và helpdesk. & Cần cơ chế phối hợp tự động nhưng vẫn kiểm soát tác động dịch vụ với thuê bao. \\ \hline
+Quản lý bản vá & Secure boot, chữ ký số firmware, OTA delta, phân vùng A/B, anti-rollback và xử lý legacy. & Thiết bị cũ không thể vá triệt để, quy trình OTA vừa là biện pháp khắc phục vừa là bề mặt tấn công. \\ \hline
+\end{tabular}
+\caption{Phân loại năm trụ cột}
+\label{tab:literature-classification}
+\end{table}
+
+Nhóm mô hình hóa mối đe dọa sử dụng STRIDE, PASTA, DREAD và MITRE ATT\&CK để mô tả tác nhân, tài sản, luồng dữ liệu và đường đi tấn công. Các nghiên cứu gần đây hướng tới tự động sinh attack graph từ topo mạng hoặc cấu hình thiết bị, qua đó giảm phụ thuộc vào chuyên gia thủ công \cite{stridepasta2022,smsi2025,attackiot2023}. Điều này hữu ích cho ISP vì số lượng cấu hình CPE rất lớn.
+
+Nhóm log và audit tập trung vào thu thập syslog, auditd, telemetry mạng, phát hiện bất thường bằng học máy và tích hợp SIEM. Điểm chung của các nghiên cứu là dữ liệu log từ IoT thường thiếu chuẩn hóa, không đầy đủ ngữ cảnh và dễ bị mất khi thiết bị khởi động lại. Vì vậy, cần xác định tối thiểu các sự kiện bắt buộc như đăng nhập quản trị, thay đổi cấu hình, kết nối ACS, cập nhật firmware, lỗi xác thực và lưu lượng quét cổng \cite{siemiot2024,logaudit2023}.
+
+Nhóm phản ứng sự cố đề xuất taxonomy và playbook cho IoT, phân tích botnet Mirai, tự động hóa SOAR và mô hình ra quyết định hai tầng giữa helpdesk và đội IRT \cite{irtiot2023,mirai2025,soar2025,twotierir2023}. Nhóm quản lý bản vá nhấn mạnh chuỗi tin cậy, secure boot, TEE, OTA an toàn, cập nhật delta, phân vùng A/B, chống rollback và hỗ trợ thiết bị legacy \cite{trustchain2025,secureota2025,deltaota2024,rollback2024}.
+
+Từ các bài báo trong thư mục nguồn, có thể nhận thấy ba xu hướng xuyên suốt. Thứ nhất, các nghiên cứu dịch chuyển từ kiểm tra thủ công sang tự động hóa, thể hiện qua giả lập firmware quy mô lớn, phát hiện thư viện tái sử dụng và tự động sinh attack graph. Thứ hai, dữ liệu vận hành như log, telemetry và ticket ngày càng được xem là đầu vào quan trọng để đánh giá rủi ro thay vì chỉ dựa vào cấu hình tĩnh. Thứ ba, bảo mật chuỗi cập nhật firmware trở thành yêu cầu lõi vì OTA vừa là cơ chế khắc phục lỗ hổng vừa là kênh có thể bị lạm dụng nếu thiếu kiểm soát.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|p{3cm}|p{4.8cm}|p{5cm}|}
+\hline
+\textbf{Nhóm nghiên cứu} & \textbf{Đầu vào thường dùng} & \textbf{Bằng chứng/đầu ra phục vụ báo cáo} \\ \hline
+Firmware và CVE & Firmware image, binary stripped, SBOM, banner dịch vụ, NVD/CVE. & Danh sách thư viện lỗi thời, lỗ hổng đã tương quan, yêu cầu benchmark firmware. \\ \hline
+Threat modeling & Topo mạng, cấu hình quyền truy cập, DFD, log hành vi, ma trận ATT\&CK. & Kịch bản tấn công, attack graph, điểm rủi ro và biện pháp kiểm soát. \\ \hline
+Log/SIEM & Syslog, telemetry, log ACS, log xác thực, lưu lượng mạng. & Rule phát hiện bất thường, yêu cầu đồng bộ thời gian và chuẩn hóa mã sự kiện. \\ \hline
+Incident/Patch & IOC, mẫu mã độc, playbook, firmware ký số, trạng thái triển khai OTA. & Quy trình phản ứng nhiều tầng, kế hoạch cô lập, phục hồi, canary và rollback an toàn. \\ \hline
+\end{tabular}
+\caption{Đầu vào và bằng chứng rút ra từ khảo sát tài liệu}
+\label{tab:survey-evidence}
+\end{table}
+
+\section{Yêu cầu quản lý an ninh}
+Từ khảo sát trên, có thể rút ra các yêu cầu chính. Thứ nhất, tổ chức cần kiểm kê tài sản có định danh ổn định gồm model, phiên bản firmware, mã CPE 2.3, cấu hình dịch vụ và mức phơi nhiễm mạng. Thứ hai, quá trình đánh giá lỗ hổng phải kết hợp quét chủ động, phân tích firmware và tương quan CVE/CVSS thay vì chỉ dựa vào banner dịch vụ. Thứ ba, mô hình hóa mối đe dọa cần bám sát ranh giới tin cậy giữa LAN, WAN, ACS, backend và SOC. Thứ tư, log phải đủ để truy vết sự kiện từ thiết bị đến backend nhưng không vượt quá khả năng lưu trữ và băng thông. Thứ năm, phản ứng sự cố và vá lỗi phải được thiết kế cho triển khai hàng loạt, có kiểm thử, phân nhóm canary và cơ chế phục hồi.
+
+Các yêu cầu này cần được xem như điều kiện thiết kế của toàn bộ quy trình, không phải danh sách kiểm tra độc lập. Nếu kiểm kê tài sản thiếu phiên bản firmware, hệ thống không thể ưu tiên bản vá chính xác. Nếu log thiếu sự kiện thay đổi cấu hình hoặc lỗi xác thực, SOC khó phát hiện khai thác đang diễn ra. Nếu OTA không có chữ ký số, anti-rollback và kiểm thử canary, quá trình vá lỗi có thể làm tăng rủi ro thay vì giảm rủi ro.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|p{3.1cm}|p{4.2cm}|p{5.8cm}|}
+\hline
+\textbf{Trụ cột} & \textbf{Đầu vào chính} & \textbf{Đầu ra mong muốn} \\ \hline
+Đánh giá lỗ hổng & Kiểm kê tài sản, firmware, dịch vụ mở, CVE/CVSS & Danh sách lỗ hổng đã xác minh và thứ tự ưu tiên xử lý \\ \hline
+Mô hình hóa đe dọa & Kiến trúc, luồng dữ liệu, tác nhân, ranh giới tin cậy & Kịch bản tấn công, attack graph, biện pháp kiểm soát \\ \hline
+Log và audit & Syslog, auditd, telemetry, sự kiện ACS/backend & Truy vết sự kiện, cảnh báo bất thường, bằng chứng tuân thủ \\ \hline
+Phản ứng sự cố & Cảnh báo SIEM, ticket khách hàng, IOC, playbook & Cô lập, xóa bỏ, phục hồi và báo cáo sau sự cố \\ \hline
+Quản lý bản vá & SBOM, firmware, chữ ký số, môi trường kiểm thử & Bản vá OTA an toàn, chống rollback, giảm thiết bị legacy \\ \hline
+\end{tabular}
+\caption{Tổng hợp năm trụ cột quản lý an ninh}
+\label{tab:five-pillars}
+\end{table}
+
+\end{document}

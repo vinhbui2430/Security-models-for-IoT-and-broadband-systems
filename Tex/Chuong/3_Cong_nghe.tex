@@ -1,0 +1,232 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+Chương này trình bày năm trụ cột công nghệ theo một chuỗi vận hành thống nhất thay vì các biện pháp rời rạc. Dữ liệu kiểm kê và phát hiện lỗ hổng ở Mục 3.1 được chuyển thành ngữ cảnh rủi ro cho mô hình hóa mối đe dọa ở Mục 3.2; kết quả mô hình hóa sinh ra yêu cầu log, rule SIEM và chỉ số kiểm toán ở Mục 3.3; cảnh báo từ log kích hoạt playbook phản ứng sự cố ở Mục 3.4; cuối cùng, kết quả điều tra và ưu tiên rủi ro quay lại quy trình vá OTA ở Mục 3.5. Mạch liên kết này giúp bảo đảm mọi phát hiện kỹ thuật đều có đường đi đến hành động xử lý, đồng thời tạo vòng phản hồi để bản vá, cấu hình và luật phát hiện được cải tiến liên tục.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.98\textwidth}{!}{%
+    \begin{tikzpicture}[
+        every node/.style={font=\scriptsize},
+        stage/.style={draw, rounded corners, align=center, minimum width=2.7cm, minimum height=1cm}
+    ]
+        \node[stage] (asset) at (0,0) {3.1\\Kiểm kê, firmware, CVE};
+        \node[stage] (risk) at (3.5,0) {3.2\\DFD, STRIDE, SSVC};
+        \node[stage] (log) at (7,0) {3.3\\Rule log, SIEM, audit};
+        \node[stage] (ir) at (10.5,0) {3.4\\IDS-RAG, SOAR};
+        \node[stage] (ota) at (14,0) {3.5\\SBOM/VEX, OTA};
+        \draw[->, thick] (asset.east) -- (risk.west);
+        \draw[->, thick] (risk.east) -- (log.west);
+        \draw[->, thick] (log.east) -- (ir.west);
+        \draw[->, thick] (ir.east) -- (ota.west);
+        \draw[->, thick, dashed] (ota.south) .. controls (10.5,-1.6) and (3.5,-1.6) .. node[below, align=center]{phản hồi cấu hình, phiên bản, mức phơi nhiễm} (asset.south);
+    \end{tikzpicture}%
+    }
+    \caption{Chuỗi liên kết giữa năm trụ cột công nghệ trong Chương 3}
+    \label{fig:chapter3-pipeline}
+\end{figure}
+
+\section{Đánh giá lỗ hổng}
+Đánh giá lỗ hổng là quy trình nhận diện, xác minh và ưu tiên các điểm yếu có thể bị khai thác trong thiết bị hoặc dịch vụ. Với IoT và băng rộng, tài sản cần đánh giá bao gồm firmware, kernel, thư viện mã nguồn mở, dịch vụ quản trị web, giao thức TR-069/TR-369, SSH, telnet, UPnP, DNS proxy, giao diện Wi-Fi và API backend. Quy trình không nên dừng ở thao tác quét cổng, vì nhiều lỗ hổng nằm trong thành phần nhị phân hoặc thư viện cũ được tái sử dụng.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{Hinhve/vulnerability_assessment_process.png}
+    \caption{Quy trình đánh giá lỗ hổng cho thiết bị nhúng}
+    \label{fig:vuln-process}
+\end{figure}
+
+Một quy trình thực tế gồm năm bước. Bước một là kiểm kê tài sản, chuẩn hóa model, phiên bản firmware, địa chỉ quản trị, nhà sản xuất và trạng thái hỗ trợ. Bước hai là thu thập firmware, cấu hình mặc định và SBOM nếu có. Bước ba là quét chủ động bằng OpenVAS, Nessus hoặc công cụ tương đương, đồng thời phân tích tĩnh firmware để tìm thư viện lỗi thời, mật khẩu mặc định, khóa bí mật nhúng và binary dễ bị khai thác. Bước bốn là tương quan phát hiện với NVD, CVE, CVSS, EPSS và thông tin khai thác thực tế. Bước năm là xác minh, loại bỏ false positive và lập kế hoạch xử lý theo mức độ rủi ro.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|l|p{4.4cm}|p{4.4cm}|}
+\hline
+\textbf{Bước} & \textbf{Hoạt động} & \textbf{Đầu vào} & \textbf{Đầu ra} \\ \hline
+1 & Kiểm kê tài sản & Model, serial, firmware, CPE 2.3, vị trí mạng, trạng thái hỗ trợ. & Danh mục tài sản có định danh ổn định và mức phơi nhiễm. \\ \hline
+2 & Thu thập firmware & Firmware image, cấu hình mặc định, SBOM, tài liệu nhà sản xuất. & Kho mẫu firmware và metadata phục vụ phân tích. \\ \hline
+3 & Quét và phân tích & OpenVAS/Nessus, phân tích tĩnh, giả lập động, fingerprint thư viện. & Phát hiện sơ bộ về dịch vụ lỗi, thư viện cũ, bí mật nhúng và cấu hình yếu. \\ \hline
+4 & Tương quan CVE & NVD, CVE, CVSS, EPSS, exploit public, thông tin backport. & Danh sách lỗ hổng đã gắn ngữ cảnh rủi ro. \\ \hline
+5 & Xác minh và ưu tiên & Kết quả kiểm thử, số thuê bao ảnh hưởng, vai trò thiết bị, khả năng vá. & Kế hoạch xử lý gồm vá, cấu hình lại, cô lập hoặc chấp nhận rủi ro. \\
+\hline
+\end{tabular}
+\caption{Các bước trong quy trình đánh giá lỗ hổng cho thiết bị IoT và băng rộng}
+\label{tab:vulnerability-assessment-steps}
+\end{table}
+
+Công cụ OpenVAS phù hợp cho môi trường học thuật và thử nghiệm do tính mở, trong khi Nessus có hệ sinh thái plugin thương mại và khả năng báo cáo tốt. Tuy nhiên, cả hai công cụ đều gặp hạn chế với firmware nhúng nếu dịch vụ không lộ banner chính xác hoặc nhà sản xuất backport bản vá mà không đổi phiên bản. Vì vậy, kết quả quét cần được kết hợp với phân tích firmware, kiểm thử động trong môi trường giả lập như QEMU/FirmAE \cite{kim2020firmae} và kiểm chứng thủ công.
+
+Về tính khả thi, đánh giá lỗ hổng tự động phù hợp nhất với router SOHO, CPE Linux-based và gateway có firmware dạng squashfs, cramfs hoặc ubifs có thể giải nén được. Với vi điều khiển, RTOS đóng kín hoặc firmware phụ thuộc mạnh vào ngoại vi phần cứng, khả năng giả lập thấp hơn và cần bổ sung kiểm thử phần cứng thật. Đây là biểu hiện đầu tiên của ``Nghịch lý tài nguyên -- an ninh'': càng muốn quét sâu, giải nén nhiều, so khớp CVE chính xác và xác minh động thì càng cần CPU, RAM, kho lưu trữ và thời gian lab lớn hơn, trong khi nhiều CPE legacy lại có tài nguyên rất hạn chế. Do đó, thiết kế thực tế nên đẩy tác vụ nặng như phân tích binary, fuzzy matching và sandboxing lên máy chủ lab hoặc edge gateway; thiết bị chỉ gửi metadata tối thiểu như model, phiên bản firmware, hash gói và danh sách dịch vụ đang mở.
+
+\subsection{Cơ chế kỹ thuật nâng cao trong đánh giá lỗ hổng}
+\textbf{Khớp mờ CVE}. Trong thực tế, biểu ngữ dịch vụ và metadata firmware thường không khớp hoàn toàn với tên sản phẩm trong NVD/CVE do nhà sản xuất đổi tên, rút gọn chuỗi phiên bản hoặc backport bản vá. Vì vậy, quy trình đánh giá lỗ hổng cần bổ sung bước Fuzzy CVE Matching. Đầu vào gồm service banner, chuỗi phiên bản trích xuất từ firmware, mã CPE nếu có và danh sách ứng viên từ NVD. Hệ thống chuẩn hóa chuỗi bằng cách chuyển về chữ thường, loại bỏ ký tự thừa, tách vendor, product, version, sau đó tính khoảng cách Levenshtein để đo mức sai khác ký tự và độ tương đồng cosine trên vector n-gram hoặc TF-IDF để đo tương đồng ngữ nghĩa nhẹ. Ứng viên CVE được chấp nhận khi điểm tổng hợp vượt ngưỡng và được xác minh lại bằng bằng chứng như đường dẫn binary, thư viện liên quan hoặc banner runtime.
+
+\textbf{Trích xuất đặc trưng firmware}. Nền tảng của các hướng như AutoFirm là xem firmware như tập hợp binary đã bị lược bỏ thông tin gỡ lỗi, trong đó tên hàm và symbol không còn đầy đủ. Công cụ phân rã firmware thành các tệp thực thi, xác định kiến trúc CPU, tách chuỗi hằng, rồi xây dựng đồ thị luồng điều khiển (Control Flow Graph -- CFG) từ các khối lệnh cơ bản và cạnh nhảy. Khi có mã nguồn hoặc script cấu hình, hệ thống có thể bổ sung cây cú pháp trừu tượng (Abstract Syntax Tree -- AST) để nhận diện lời gọi hàm, endpoint hoặc logic xác thực. Song song, các biểu thức chính quy được dùng để quét chuỗi phiên bản như \texttt{openssl-1.0.2}, \texttt{busybox v1.24} hoặc \texttt{dropbear\_2016}. Việc kết hợp CFG/AST với regex giúp nhận diện thư viện tái sử dụng ngay cả khi binary bị stripped hoặc tên gói không còn rõ ràng.
+
+\textbf{Giả lập phân xử}. Với FirmAE \cite{kim2020firmae}, mục tiêu không chỉ là giải nén firmware mà còn khởi động được dịch vụ web/API để kiểm thử động. Khi QEMU gặp lỗi như kernel panic, thiếu thiết bị phần cứng, NVRAM không có khóa cấu hình hoặc giao diện mạng không phản hồi, cơ chế arbitrated emulation tự động can thiệp bằng các heuristic. Ví dụ, hệ thống có thể giả lập giá trị NVRAM mặc định, bỏ qua một số kiểm tra phần cứng, sửa script khởi động, gán lại bridge mạng hoặc ánh xạ cổng web ra môi trường phân tích. Cách làm này làm tăng xác suất firmware khởi động đủ xa để lộ giao diện quản trị, từ đó cho phép fuzzing, kiểm thử xác thực và quan sát hành vi runtime. Hạn chế là FirmAE vẫn khó bao phủ firmware dùng RTOS, kiến trúc vi điều khiển đặc thù, driver đóng kín hoặc cơ chế kiểm tra phần cứng độc quyền; độ trễ phân tích cũng tăng mạnh khi phải thử nhiều cấu hình NVRAM và topology mạng. Vì vậy, FirmAE nên được tích hợp như một tầng xác minh có chọn lọc sau khi đã ưu tiên rủi ro, thay vì chạy đại trà cho mọi phiên bản firmware.
+
+
+\section{Mô hình hóa mối đe dọa}
+Mô hình hóa mối đe dọa giúp chuyển kiến trúc hệ thống thành tập hợp kịch bản tấn công có thể đánh giá và kiểm soát. STRIDE phân loại mối đe dọa thành giả mạo, thay đổi dữ liệu, phủ nhận, lộ thông tin, từ chối dịch vụ và leo thang đặc quyền. DREAD hỗ trợ chấm điểm theo thiệt hại, khả năng tái lập, khả năng khai thác, số người dùng bị ảnh hưởng và khả năng phát hiện. PASTA cung cấp cách tiếp cận theo rủi ro, bắt đầu từ mục tiêu nghiệp vụ, phân rã kiến trúc, nhận diện mối đe dọa, phân tích lỗ hổng và đề xuất kiểm soát.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Hinhve/threat_model_dfd.png}
+    \caption{Sơ đồ luồng dữ liệu phục vụ mô hình hóa mối đe dọa}
+    \label{fig:threat-dfd}
+\end{figure}
+
+Đối với hệ thống IoT/băng rộng, sơ đồ luồng dữ liệu cần thể hiện ít nhất bốn ranh giới tin cậy: mạng LAN của người dùng, kết nối WAN/Internet, mặt phẳng quản trị ACS/USP và môi trường backend/SOC. Ví dụ, kênh TR-069 có thể bị đe dọa bởi giả mạo ACS, lộ thông tin định danh thiết bị hoặc thay đổi cấu hình trái phép. Giao diện web của router có thể bị CSRF, XSS hoặc brute force. Pipeline OTA có thể bị tấn công thay thế firmware nếu thiếu ký số hoặc kiểm tra rollback.
+
+Quy trình đề xuất kết hợp PASTA để xác định mục tiêu và phạm vi, STRIDE để sinh danh sách mối đe dọa trên từng luồng dữ liệu, và DREAD để hỗ trợ chấm điểm ưu tiên. Bốn ranh giới tin cậy cần được kiểm tra lặp lại là: từ thiết bị người dùng trong LAN sang router/CPE; từ CPE ra WAN/Internet; từ CPE đến ACS/USP; và từ ACS/USP sang backend ISP, kho firmware, SIEM hoặc OSS/BSS.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3cm}|p{4.4cm}|p{5.4cm}|}
+\hline
+\textbf{Ranh giới} & \textbf{Luồng dữ liệu tiêu biểu} & \textbf{Mối đe dọa cần kiểm tra} \\ \hline
+LAN & Thiết bị IoT, điện thoại, trình duyệt quản trị, Wi-Fi. & Brute force mật khẩu, CSRF/XSS, chiếm quyền phiên, thiết bị nội bộ độc hại. \\ \hline
+WAN & CPE/ONT giao tiếp Internet, DNS, NTP, dịch vụ mở. & Quét cổng, khai thác RCE, DDoS, lộ giao diện quản trị từ xa. \\ \hline
+ACS/USP & TR-069/TR-369, cấu hình từ xa, lệnh reboot, thay đổi tham số. & Giả mạo ACS, lạm dụng quyền quản trị, thay đổi DNS hoặc mở port hàng loạt. \\ \hline
+Backend ISP & Kho firmware, SIEM, AAA, OSS/BSS, hệ thống ticket. & Lộ khóa ký, phát hành firmware sai, truy cập trái phép, mất toàn vẹn log. \\ \hline
+\end{tabular}
+\caption{Ánh xạ ranh giới tin cậy với kỹ thuật mô hình hóa}
+\label{tab:trust-boundaries}
+\end{table}
+
+\subsection{Tự động hóa mô hình hóa mối đe dọa}
+\textbf{Quy trình neuro-symbolic SMSI}. Để giảm phụ thuộc vào DFD thủ công, khung SMSI \cite{smsi2025} có thể được dùng như một lớp suy luận tự động trên các file kiến trúc SysML. Quy trình bắt đầu bằng việc trích xuất thành phần, cổng giao tiếp, luồng dữ liệu và ràng buộc truy cập từ SysML. Các đoạn mô tả được mã hóa bằng dense encoder chuyên miền an ninh như SecureBERT để tạo vector ngữ nghĩa; sau đó LLM, ví dụ Gemma-4 trong mô hình lý thuyết, sinh ứng viên tài sản, tác nhân, điểm vào và kỹ thuật MITRE ATT\&CK \cite{mitreattackiot}. Lớp symbolic kiểm tra các luật như ``luồng đi qua ranh giới tin cậy phải có xác thực'', ``dịch vụ quản trị từ WAN làm tăng rủi ro truy cập ban đầu'', hoặc ``kho firmware cần kiểm soát toàn vẹn''. Kết quả cuối là attack graph có thể truy vết từ thành phần SysML đến kỹ thuật ATT\&CK và biện pháp kiểm soát.
+
+Tính khả thi của SMSI phụ thuộc trực tiếp vào chất lượng mô hình SysML và mức chuẩn hóa tên thành phần. Nếu sơ đồ thiếu ranh giới tin cậy, thiếu luồng quản trị ACS/USP hoặc dùng tên nội bộ không nhất quán, mô hình LLM có thể sinh ánh xạ ATT\&CK không có bằng chứng, tức hiện tượng hallucination. Vì vậy, lớp neuro-symbolic cần được vận hành theo cơ chế human-in-the-loop: LLM chỉ đề xuất ứng viên, còn luật symbolic, danh mục tài sản từ Mục 3.1 và chuyên gia SOC/NOC xác nhận trước khi tạo rule log hoặc playbook. Chi phí tính toán của embedding và LLM nên đặt ở backend; thiết bị biên không cần chạy mô hình lớn mà chỉ cung cấp cấu hình và telemetry đã chuẩn hóa.
+
+\textbf{Phân loại STRIDE bằng TextCPR}. Với mô tả lỗ hổng dạng văn bản, phương pháp TextCPR kết hợp TextCNN và production rule machine để tự động ánh xạ vào STRIDE \cite{stridepasta2022}. TextCNN trích xuất đặc trưng cục bộ từ các cụm từ như ``bypass authentication'', ``modify configuration'', ``information leak'' hoặc ``privilege escalation''. Từ đầu ra của mô hình học sâu, hệ thống tạo các bộ ba quan hệ gồm chủ thể, hành động và hậu quả; ví dụ ``attacker -- bypasses -- authentication'' hoặc ``malware -- modifies -- DNS setting''. Máy luật sản xuất áp dụng tập luật nếu--thì để chuyển các bộ ba này vào sáu nhóm STRIDE: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service và Elevation of privilege. Cách kết hợp này giúp tận dụng khả năng nhận dạng ngôn ngữ của mô hình học sâu nhưng vẫn giữ được tính giải thích của luật.
+
+\textbf{Cây quyết định SSVC}. Bên cạnh DREAD, báo cáo bổ sung SSVC \cite{attackiot2023} để ưu tiên xử lý lỗ hổng theo bối cảnh tổ chức. Thay vì chỉ dựa vào điểm CVSS tĩnh, SSVC dùng cây quyết định với các nút như trạng thái khai thác, khả năng tự động hóa, mức phơi nhiễm, tác động kỹ thuật và mức ảnh hưởng nhiệm vụ. Trong môi trường ISP, cùng một CVE có thể được xử lý khác nhau nếu nó chỉ tồn tại trong LAN, ảnh hưởng giao diện WAN, hoặc cho phép thay đổi cấu hình ACS hàng loạt. Đầu ra của cây quyết định thường là các hành động như theo dõi, lên lịch vá, vá khẩn cấp hoặc cô lập tạm thời. Nhờ đó, SSVC giảm sự cứng nhắc của CVSS và giúp cân bằng giữa rủi ro an ninh với tính sẵn sàng dịch vụ.
+
+
+\section{Ghi nhật ký và kiểm toán}
+Log và audit là nền tảng của phát hiện, truy vết và tuân thủ. Trong thiết bị nhúng, nguồn log thường gồm syslog, kernel log, log dịch vụ web, log xác thực, log Wi-Fi, log TR-069/TR-369 và sự kiện cập nhật firmware. Ở backend, nguồn log gồm API gateway, ACS, AAA, kho firmware, hệ thống ticket, IDS/IPS và SIEM. Mục tiêu là tạo chuỗi bằng chứng liên tục từ hành vi trên thiết bị đến tác động trên dịch vụ.
+
+Thiết kế log cần cân bằng giữa độ chi tiết và chi phí. Các sự kiện tối thiểu nên được thu thập gồm đăng nhập thành công/thất bại, thay đổi mật khẩu, thay đổi DNS, mở cổng quản trị từ WAN, thay đổi cấu hình Wi-Fi, kết nối đến ACS, tải firmware, kiểm tra chữ ký, khởi động lại bất thường, crash dịch vụ và lưu lượng quét cổng. Trường log nên có thời gian đồng bộ NTP, định danh thiết bị, phiên bản firmware, địa chỉ IP, mã sự kiện, mức nghiêm trọng và kết quả xử lý.
+
+SIEM giúp tương quan log từ nhiều nguồn để phát hiện bất thường. Ví dụ, nhiều CPE cùng gửi log đăng nhập thất bại, tăng lưu lượng telnet hoặc truy vấn DNS bất thường có thể là dấu hiệu botnet. Audit hỗ trợ kiểm tra ai đã thay đổi cấu hình ACS, bản firmware nào được phát hành, thiết bị nào đã nhận bản vá và thiết bị nào thất bại khi cập nhật. Để bảo đảm tính toàn vẹn, log quan trọng cần được gửi ra ngoài thiết bị sớm, có kiểm soát truy cập, lưu trữ bất biến theo thời hạn và đồng bộ với chính sách tuân thủ.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3.2cm}|p{4.5cm}|p{5.1cm}|}
+\hline
+\textbf{Nguồn log} & \textbf{Sự kiện tối thiểu} & \textbf{Mục đích phát hiện/kiểm toán} \\ \hline
+Thiết bị CPE/ONT & Đăng nhập, đổi mật khẩu, thay đổi DNS, bật quản trị WAN, crash dịch vụ. & Phát hiện chiếm quyền thiết bị, cấu hình độc hại và dấu hiệu khai thác. \\ \hline
+Firmware/OTA & Tải firmware, kiểm tra chữ ký, đổi phân vùng boot, lỗi rollback, reboot sau cập nhật. & Truy vết bản vá, phát hiện cập nhật thất bại hoặc firmware không hợp lệ. \\ \hline
+ACS/USP & Phiên kết nối thiết bị, lệnh cấu hình, thay đổi hàng loạt, lỗi xác thực. & Kiểm toán quản trị từ xa và phát hiện lạm dụng tài khoản vận hành. \\ \hline
+SIEM/SOC & Cảnh báo tương quan, IOC, trạng thái ticket, hành động playbook. & Đo thời gian phát hiện, thời gian phản ứng và hiệu quả kiểm soát. \\ \hline
+\end{tabular}
+\caption{Bộ log tối thiểu cho CPE, ONT và backend ISP}
+\label{tab:minimal-log-set}
+\end{table}
+
+\subsection{Bảo toàn log và phân tích bảo vệ quyền riêng tư}
+\textbf{Kiến trúc log bất biến}. Với thiết bị đã bị chiếm quyền, log cục bộ có thể bị sửa hoặc xóa. Khung DASLog giải quyết vấn đề này bằng cách tổ chức sự kiện, tệp log và lệnh điều khiển từ xa thành cấu trúc cây Merkle \cite{logaudit2023}. Mỗi bản ghi được băm thành nút lá; các nút cha được tính bằng cách băm cặp nút con; cuối cùng, hàm băm gốc đại diện cho trạng thái toàn vẹn của một lô log. Hàm băm gốc được neo định kỳ vào blockchain cấp phép do các thành phần tin cậy của ISP vận hành, ví dụ SOC, NOC và hệ thống kiểm toán. Nếu kẻ tấn công chiếm quyền root trên CPE rồi xóa một dòng log, đường băm từ nút lá đến gốc sẽ thay đổi và không còn khớp với giá trị đã neo. Cơ chế này tạo tính toàn vẹn hướng tới (forward integrity), nghĩa là log đã phát sinh trước thời điểm bị xâm nhập vẫn có thể được kiểm chứng.
+
+Tuy nhiên, DASLog cũng làm rõ ``Nghịch lý tài nguyên -- an ninh'' trong ghi nhật ký: băm liên tục, duy trì cây Merkle, ký gói log và neo lên blockchain giúp tăng toàn vẹn nhưng tiêu thụ CPU, flash write-cycle, RAM đệm và băng thông uplink của thiết bị. Nếu CPE trực tiếp tham gia blockchain, cơ chế đồng thuận BFT còn tạo thêm độ trễ xác nhận và lưu lượng đồng bộ giữa các nút. Thiết kế khả thi hơn là để thiết bị biên chỉ tính hash theo lô nhỏ hoặc dùng hàm băm hạng nhẹ, sau đó offload Merkle aggregation, chữ ký mạnh và thao tác anchor blockchain lên edge gateway, ACS hoặc cụm SIEM của ISP. Với thiết bị legacy, khoảng neo có thể theo phút hoặc theo ngưỡng số bản ghi thay vì theo từng log; dữ liệu thô vẫn được gửi về syslog/SIEM truyền thống để không làm chậm luồng phát hiện.
+
+\textbf{RAG bảo vệ quyền riêng tư}. Khi log chứa địa chỉ IP, định danh thuê bao hoặc cấu hình Wi-Fi, việc gửi log thô về SIEM có thể tạo rủi ro riêng tư. Quy trình Privacy-Preserving RAG như DP-SynRAG hoặc VAGUE-Gate xử lý log tại biên trước khi truy xuất. Thiết bị hoặc gateway chuẩn hóa log, loại bỏ trường nhận dạng trực tiếp, tạo vector nhúng biểu diễn ngữ nghĩa sự kiện, rồi thêm nhiễu theo Differential Privacy để giảm khả năng suy ngược dữ liệu cá nhân. SIEM hoặc hệ thống RAG trung tâm chỉ truy vấn trên vector đã ẩn danh, kết hợp với metadata tối thiểu như model, firmware và mức nghiêm trọng. Cách tiếp cận này giữ được khả năng phát hiện bất thường và truy hồi tri thức, nhưng hạn chế việc tập trung dữ liệu nhạy cảm ở backend.
+
+
+\section{Phản ứng sự cố}
+Phản ứng sự cố trong IoT/băng rộng phải xử lý đồng thời hai mục tiêu: giảm thiệt hại an ninh và duy trì dịch vụ truy nhập Internet. Vòng đời phù hợp gồm chuẩn bị, phát hiện và phân tích, ngăn chặn, xóa bỏ, phục hồi và rút kinh nghiệm theo NIST SP 800-61 và ISO/IEC 27035.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.68\textwidth]{Hinhve/incident_response_cycle.png}
+    \caption{Vòng đời phản ứng sự cố theo NIST SP 800-61 và ISO/IEC 27035}
+    \label{fig:ir-cycle}
+\end{figure}
+
+Trong giai đoạn chuẩn bị, tổ chức cần định nghĩa playbook cho các sự cố điển hình như botnet Mirai, khai thác lỗ hổng RCE trên router, lộ tài khoản ACS, firmware lỗi gây mất kết nối diện rộng và tấn công DDoS từ thiết bị thuê bao. Giai đoạn phát hiện dựa trên SIEM, IDS, ticket khách hàng và chỉ số bất thường vận hành. Giai đoạn ngăn chặn có thể gồm chặn IP, vô hiệu hóa giao diện WAN admin, đẩy cấu hình tạm thời, cô lập nhóm thiết bị hoặc hạ quyền dịch vụ. Giai đoạn xóa bỏ và phục hồi cần thay đổi mật khẩu, xóa cấu hình độc hại, khởi động lại an toàn, cập nhật firmware và xác minh thiết bị trở lại trạng thái tin cậy.
+
+Vòng đời sáu giai đoạn cần được gắn với trách nhiệm vận hành cụ thể. Helpdesk hoặc SOC cấp một tiếp nhận cảnh báo, loại trừ lỗi vật lý và tạo ticket. SOC/NOC phân tích IOC, xác định phạm vi thuê bao và tác động dịch vụ. Đội firmware hoặc nhà cung cấp chịu trách nhiệm bản vá, trong khi quản lý vận hành phê duyệt các hành động có thể ảnh hưởng hàng loạt như cô lập thiết bị hoặc ép cập nhật cấu hình.
+
+\subsection{Tự động hóa phản ứng bằng AI, D3FEND và CACAO}
+\textbf{IDS-RAG tạo báo cáo tự động}. Để giảm thời gian phân tích, quy trình phản ứng có thể tích hợp IDS-RAG \cite{soar2025} theo năm bước. Bước một là tiền xử lý log, chuẩn hóa thời gian, địa chỉ nguồn/đích, cổng, giao thức, số gói, số byte và mã sự kiện. Bước hai dùng mạng nơ-ron sâu (Deep Neural Network -- DNN) để phân loại hành vi DoS/DDoS hoặc lưu lượng bất thường khác. Bước ba xây dựng prompt nhận thức giải thích từ các đặc trưng nổi bật như tốc độ tăng kết nối, entropy địa chỉ nguồn, tỷ lệ SYN/ACK, số thiết bị cùng model bị ảnh hưởng và IOC. Bước bốn thực hiện truy xuất RAG lai, kết hợp BM25 cho tìm kiếm từ khóa trong playbook/ticket cũ và FAISS cho tìm kiếm vector theo ngữ nghĩa. Bước năm LLM tạo báo cáo chuẩn hóa gồm cơ sở lý luận, chỉ số chính, đánh giá niềm tin, đánh giá mối đe dọa và khuyến nghị xử lý.
+
+Giá trị cốt lõi của RAG so với LLM thông thường là khả năng neo khuyến nghị vào bằng chứng cụ thể. Thay vì chỉ sinh lời khuyên chung chung, lớp truy xuất lấy đoạn liên quan từ NIST SP 800-61 \cite{nist80061}, ISO/IEC 27035 \cite{iso27035}, playbook nội bộ, ticket cũ của ISP và IOC mới nhất; LLM chỉ tổng hợp trên các bằng chứng đã truy xuất. Điều này giúp báo cáo có nguồn gốc kiểm chứng, giảm hallucination và dễ được SOC/NOC chấp nhận hơn. Overhead chính nằm ở xây dựng chỉ mục BM25/FAISS, làm sạch dữ liệu ticket và kiểm soát quyền truy cập tri thức; do đó pipeline RAG nên chạy ở SOC hoặc backend, còn thiết bị CPE chỉ phát log/sự kiện đã chuẩn hóa.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=0.5cm, every node/.style={font=\scriptsize}]
+        \node[draw, rounded corners, align=center, minimum width=2.4cm, minimum height=0.9cm] (log) at (0,0) {Log/NetFlow\\IOC};
+        \node[draw, rounded corners, align=center, minimum width=2.4cm, minimum height=0.9cm] (dnn) at (3,0) {DNN IDS\\phân loại};
+        \node[draw, rounded corners, align=center, minimum width=2.4cm, minimum height=0.9cm] (rag) at (6,0) {RAG\\BM25 + FAISS};
+        \node[draw, rounded corners, align=center, minimum width=2.4cm, minimum height=0.9cm] (llm) at (9,0) {LLM\\báo cáo};
+        \node[draw, rounded corners, align=center, minimum width=2.4cm, minimum height=0.9cm] (soar) at (12,0) {SOAR\\CACAO};
+        \node[draw, rounded corners, align=center, minimum width=3.2cm, minimum height=0.8cm] (kb) at (6,-1.5) {NIST, playbook, ticket cũ};
+        \draw[->, thick] (log) -- (dnn);
+        \draw[->, thick] (dnn) -- (rag);
+        \draw[->, thick] (rag) -- (llm);
+        \draw[->, thick] (llm) -- (soar);
+        \draw[->, thick] (kb) -- (rag);
+    \end{tikzpicture}
+    \caption{Luồng mạng nơ-ron kết hợp RAG trong phản ứng sự cố}
+    \label{fig:ids-rag-flow}
+\end{figure}
+
+\textbf{D3FEND và CACAO playbook}. Sau khi hành vi mã độc được đối chiếu với MITRE ATT\&CK \cite{mitreattackiot}, phân tích không gian-tuần tự (spatio-sequential analysis) xem xét đồng thời vị trí lây nhiễm trong topo mạng và thứ tự hành động của mã độc theo thời gian. Ví dụ, chuỗi ``quét telnet -- brute force -- tải binary -- kết nối C2 -- phát tán DDoS'' được ánh xạ sang các đối sách D3FEND \cite{mirai2025} như cô lập thiết bị, trục xuất tiến trình độc hại, khôi phục cấu hình và xác minh trạng thái sạch. Các bước này có thể được biên dịch thành CACAO Playbooks, một định dạng máy có thể đọc và thực thi bởi SOAR \cite{soar2025}. Playbook CACAO mô tả trigger, điều kiện, lệnh gọi API đến ACS/SIEM/firewall, bước phê duyệt nếu cần và tiêu chí dừng, nhờ đó một phần phản ứng có thể tự động hóa mà vẫn kiểm soát được tác động dịch vụ. Tính machine-readable của CACAO là điểm nối quan trọng giữa báo cáo IDS-RAG và hành động thực thi: SOAR có thể đọc playbook để cô lập thuê bao, chặn IP, đẩy cấu hình ACS hoặc mở ticket, trong khi các bước có rủi ro cao vẫn yêu cầu phê duyệt của NOC.
+
+
+\section{Quản lý bản vá bảo mật}
+Quản lý bản vá là quá trình xác định nhu cầu vá, kiểm thử, phê duyệt, phát hành, giám sát và xử lý ngoại lệ. Với CPE, router và ONT, bản vá thường ở dạng firmware hoặc module phần mềm nhúng. Một bản vá không được kiểm thử kỹ có thể làm mất kết nối hàng loạt, vì vậy quy trình phải có môi trường lab mô phỏng, triển khai canary, phân nhóm theo model/firmware và khả năng rollback.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{Hinhve/secure_ota_patch_process.png}
+    \caption{Quy trình quản lý bản vá và OTA an toàn}
+    \label{fig:ota-process}
+\end{figure}
+
+\subsection{Cơ chế nâng cao cho vá lỗi và OTA}
+\textbf{Kiến trúc cập nhật mô-đun IMUP}. IMUP giải quyết tình huống chỉ vá một mô-đun nhưng làm thay đổi quan hệ toàn vẹn của toàn bộ firmware \cite{deltaota2024}. Thay vì luôn phát hành lại ảnh firmware đầy đủ, hệ thống tách firmware thành các mô-đun có metadata phụ thuộc và giá trị băm. Chameleon Hash được dùng để hỗ trợ xác minh toàn vẹn chéo giữa các mô-đun trong một số trường hợp cập nhật hợp lệ: bên phát hành có khóa bẫy hợp lệ có thể tạo giá trị mới tương thích với cam kết cũ, còn bên tấn công không có khóa này vẫn không thể tạo cập nhật giả mạo có ý nghĩa. Cơ chế Proof-of-Work được đưa vào lớp phát hành hoặc gateway để buộc bên tạo gói cập nhật thực hiện chi phí tính toán trước, giúp thiết bị IoT biên chỉ cần xác minh nhẹ hơn và giảm nguy cơ bị spam gói cập nhật.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=0.45cm, every node/.style={font=\scriptsize}]
+        \node[draw, rounded corners, align=center, minimum width=2.6cm, minimum height=0.9cm] (sbom) at (0,0) {SBOM/VEX\\xác định mô-đun};
+        \node[draw, rounded corners, align=center, minimum width=2.6cm, minimum height=0.9cm] (delta) at (3.2,0) {Sinh delta\\và metadata};
+        \node[draw, rounded corners, align=center, minimum width=2.6cm, minimum height=0.9cm] (hash) at (6.4,0) {Chameleon Hash\\ký gói};
+        \node[draw, rounded corners, align=center, minimum width=2.6cm, minimum height=0.9cm] (gw) at (9.6,0) {Edge/ACS\\phân phối};
+        \node[draw, rounded corners, align=center, minimum width=2.6cm, minimum height=0.9cm] (cpe) at (12.8,0) {CPE\\xác minh nhẹ};
+        \draw[->, thick] (sbom) -- (delta);
+        \draw[->, thick] (delta) -- (hash);
+        \draw[->, thick] (hash) -- (gw);
+        \draw[->, thick] (gw) -- (cpe);
+    \end{tikzpicture}
+    \caption{Luồng thực thi cập nhật mô-đun IMUP cho firmware IoT/CPE}
+    \label{fig:imup-flow}
+\end{figure}
+
+\textbf{Pipeline CI/CD cho OTA}. Quy trình vá lỗi nên được chuẩn hóa thành đường ống CI/CD có kiểm soát \cite{secureota2025}. Khi có lỗ hổng được xác minh, hệ thống kích hoạt nhánh mã nguồn hoặc cấu hình bản vá, biên dịch firmware, sinh SBOM/VEX cập nhật, chạy kiểm thử đơn vị và kiểm thử tích hợp trên lab giả lập. Gói firmware sau đó được mã hóa và bảo vệ toàn vẹn, ví dụ dùng AES-GCM cho kênh/gói dữ liệu và ECDSA cho chữ ký phát hành. Trước khi phân phối OTA, pipeline chạy kiểm thử xác thực chữ ký, kiểm thử boot, kiểm thử rollback, kiểm thử tương thích model và kiểm thử canary. Chỉ khi các cổng kiểm soát đạt yêu cầu, bản vá mới được đẩy qua ACS/USP hoặc kênh OTA an toàn.
+
+Ở lớp mật mã, ECDSA, AES-GCM, kiểm tra anti-rollback và xác minh secure boot làm tăng đáng kể chi phí CPU và năng lượng khi thiết bị không có tăng tốc phần cứng. Để xử lý ``Nghịch lý tài nguyên -- an ninh'', hệ thống nên phân tầng thuật toán theo năng lực thiết bị: model mới dùng ECDSA/AES-GCM đầy đủ; model legacy có thể ưu tiên ChaCha20-Poly1305 cho mã hóa xác thực phần mềm, hash hạng nhẹ cho kiểm tra lô log hoặc delta package, và offload thao tác ký/phân phối nặng lên ACS/edge gateway. Dù dùng thuật toán siêu nhẹ, khóa phát hành vẫn phải được bảo vệ ở HSM hoặc pipeline CI/CD, còn thiết bị chỉ giữ khóa xác minh công khai và metadata phiên bản để chống rollback.
+
+\textbf{Tích hợp VEX với SBOM}. SBOM cho biết firmware chứa những thư viện nào, nhưng không phải mọi CVE trong thư viện đều khai thác được trong cấu hình thực tế. VEX bổ sung trạng thái máy đọc được như affected, not affected, fixed hoặc under investigation, kèm lý do như hàm lỗi không được biên dịch, mã lỗi không thể truy cập từ giao diện mạng, hoặc đã có biện pháp bù trừ. Khi kết hợp SBOM và VEX, hệ thống quản lý bản vá có thể giảm patch fatigue: thay vì vá tất cả CVE xuất hiện trong thư viện, SOC/NOC ưu tiên các lỗ hổng thực sự khai thác được trên model, firmware và mức phơi nhiễm hiện tại. VEX cũng giúp giải thích quyết định chấp nhận rủi ro tạm thời và tạo bằng chứng kiểm toán cho thiết bị legacy.
+
+Trong môi trường IoT/băng rộng, lợi ích của VEX đặc biệt rõ vì một thư viện lỗi thời có thể nằm trong firmware nhưng chức năng lỗi không được biên dịch, chỉ dùng cục bộ trong LAN, hoặc bị chặn bởi cấu hình mặc định của ISP. Nếu chỉ nhìn SBOM, đội vận hành dễ phải phát hành OTA cho hàng triệu thiết bị dù rủi ro thực tế thấp, làm tăng nguy cơ treo thiết bị hàng loạt và quá tải helpdesk. VEX bổ sung lớp ``khai thác được hay không'' để liên kết dữ liệu từ Mục 3.1, mức phơi nhiễm từ Mục 3.2 và cảnh báo thực tế từ Mục 3.3--3.4; nhờ đó quyết định vá có thể là vá khẩn cấp, canary theo vùng, cấu hình bù trừ hoặc tạm thời theo dõi. Chi phí tích hợp nằm ở việc duy trì trạng thái VEX theo từng model/firmware và cập nhật khi cấu hình mạng thay đổi, nhưng chi phí này nhỏ hơn nhiều so với OTA sai đối tượng.
+
+
+OTA an toàn cần có chuỗi tin cậy từ nhà sản xuất đến thiết bị. Gói firmware phải được ký số, kiểm tra toàn vẹn, xác thực phiên bản, chống rollback và chỉ được thực thi sau khi secure boot xác nhận. Thiết bị nên hỗ trợ phân vùng A/B để cập nhật một phân vùng dự phòng, kiểm tra khởi động thành công rồi mới chuyển trạng thái chính thức. Với thiết bị legacy không thể vá, tổ chức cần áp dụng biện pháp bù trừ như chặn giao diện quản trị từ WAN, đặt VLAN cách ly, giảm quyền dịch vụ, thay thế thiết bị theo lộ trình hoặc triển khai virtual patching tại lớp mạng.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3.1cm}|p{4.5cm}|p{5.1cm}|}
+\hline
+\textbf{Giai đoạn} & \textbf{Điểm kiểm soát} & \textbf{Rủi ro được giảm thiểu} \\ \hline
+Chuẩn bị & SBOM, phân loại model, lab kiểm thử, tiêu chí rollback. & Phát hành sai đối tượng, thiếu hiểu biết về thư viện bị ảnh hưởng. \\ \hline
+Đóng gói & Ký số firmware, kiểm tra hash, bảo vệ khóa ký, phân quyền phát hành. & Thay thế firmware, phát hành trái phép, lộ chuỗi cung ứng. \\ \hline
+Triển khai & Canary, giới hạn tốc độ, triển khai theo vùng, giám sát lỗi cập nhật. & Sự cố hàng loạt, mất kết nối thuê bao, quá tải hỗ trợ khách hàng. \\ \hline
+Phục hồi & Phân vùng A/B, anti-rollback, ghi log trạng thái boot, phương án cấu hình bù trừ. & Brick thiết bị, hạ cấp về bản lỗi, mất khả năng truy vết. \\ \hline
+\end{tabular}
+\caption{Điểm kiểm soát bắt buộc trong quản lý bản vá OTA}
+\label{tab:ota-controls}
+\end{table}
+
+\end{document}

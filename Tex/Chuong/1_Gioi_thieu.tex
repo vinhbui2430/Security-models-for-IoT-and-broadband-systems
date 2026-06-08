@@ -1,0 +1,49 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\section{Bối cảnh và động lực nghiên cứu}
+Hệ thống IoT và băng rộng đã trở thành lớp hạ tầng nền cho nhà thông minh, doanh nghiệp nhỏ, đô thị thông minh và dịch vụ truy nhập Internet của nhà cung cấp dịch vụ. Một kiến trúc điển hình bao gồm thiết bị đầu cuối như cảm biến IoT, camera IP, CPE, router Wi-Fi, ONT, các giao thức quản trị từ xa như TR-069 hoặc TR-369, nền tảng ACS/USP, hệ thống backend của ISP, kho log tập trung, SIEM và đội vận hành SOC/NOC. Những thành phần này vừa nằm trong miền quản trị của nhà mạng, vừa nằm trong môi trường vật lý của người dùng cuối, do đó ranh giới tin cậy luôn thay đổi và khó kiểm soát.
+
+Các sự cố botnet IoT, khai thác firmware lỗi thời, lộ giao diện quản trị từ xa, mật khẩu mặc định và cập nhật OTA không an toàn cho thấy thiết bị nhúng có thể trở thành điểm khởi phát của tấn công diện rộng. Đặc điểm nổi bật của CPE, router và ONT là vòng đời sử dụng dài, cấu hình không đồng nhất, hạn chế tài nguyên, phụ thuộc chuỗi cung ứng firmware và khó triển khai tác nhân bảo mật truyền thống. Vì vậy, quản lý an ninh cho hệ thống này cần kết hợp quy trình quản trị rủi ro, kỹ thuật kiểm thử bảo mật, giám sát vận hành, phản ứng sự cố và quản lý bản vá theo vòng đời.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{Hinhve/iot_broadband_architecture.png}
+    \caption{Kiến trúc tham chiếu của hệ thống IoT và băng rộng}
+    \label{fig:iot-broadband-architecture}
+\end{figure}
+
+\section{Vấn đề nghiên cứu}
+Trong hệ thống phần mềm doanh nghiệp, quy trình đánh giá lỗ hổng và phản ứng sự cố thường dựa trên máy chủ có khả năng cài đặt agent, cập nhật nhanh và thu thập log đầy đủ. Ngược lại, hệ thống IoT và băng rộng có nhiều điểm khác biệt. Firmware có thể bị đóng gói dưới dạng nhị phân khó phân tích, thiết bị dùng nhiều kiến trúc CPU như ARM hoặc MIPS, giao diện quản trị thường được tùy biến bởi nhà sản xuất, và việc vá lỗi phải bảo đảm thiết bị không bị treo trong quá trình cập nhật. Ngoài ra, sự cố có thể ảnh hưởng đồng thời đến hàng nghìn hoặc hàng triệu thuê bao, làm tăng yêu cầu về tự động hóa, phân tầng ưu tiên và phối hợp giữa SOC, NOC, chăm sóc khách hàng và nhà sản xuất thiết bị.
+
+Vấn đề đặt ra là cần một quy trình tổng hợp, đủ thực tế để áp dụng cho CPE, router, ONT và backend, nhưng vẫn bám sát chuẩn quốc tế. Quy trình này phải trả lời các câu hỏi: tài sản nào cần kiểm kê; lỗ hổng nào cần ưu tiên; mô hình đe dọa nào phản ánh đúng đường đi tấn công; log nào cần thu thập để bảo đảm truy vết; khi sự cố xảy ra thì cô lập, xóa bỏ và phục hồi ra sao; bản vá được kiểm thử, ký số, triển khai và giám sát như thế nào.
+
+\section{Mục tiêu báo cáo}
+Báo cáo hướng tới ba mục tiêu chính. Thứ nhất, hệ thống hóa các chuẩn và phương pháp quản lý an ninh liên quan đến IoT và băng rộng, bao gồm NIST SP 800-30 về đánh giá rủi ro, NIST SP 800-61 về phản ứng sự cố, ISO/IEC 27035 về quản lý sự cố an toàn thông tin và MITRE ATT\&CK for IoT về hành vi tấn công. Thứ hai, phân tích năm nhóm quy trình trọng tâm: đánh giá lỗ hổng, mô hình hóa mối đe dọa, ghi nhật ký và kiểm toán, phản ứng sự cố, quản lý bản vá. Thứ ba, đánh giá giải pháp hiện có và xác định khoảng trống nghiên cứu khi áp dụng cho thiết bị nhúng, CPE, router, ONT và backend ISP.
+
+Để các mục tiêu trên có thể kiểm chứng được, báo cáo chia mục tiêu tổng quát thành các câu hỏi nghiên cứu cụ thể. Các câu hỏi này đóng vai trò định hướng cho phần khảo sát tài liệu ở Chương 2, xây dựng quy trình ở Chương 3 và đánh giá áp dụng ở Chương 4--5.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{5.2cm}|p{5.4cm}|}
+\hline
+\textbf{Mục tiêu} & \textbf{Câu hỏi nghiên cứu} & \textbf{Kết quả kỳ vọng} \\ \hline
+Hệ thống hóa chuẩn & Chuẩn nào phù hợp để đánh giá rủi ro, phản ứng sự cố và mô tả hành vi tấn công trong IoT/băng rộng? & Bộ khung tham chiếu gồm NIST SP 800-30, NIST SP 800-61, ISO/IEC 27035 và MITRE ATT\&CK for IoT. \\ \hline
+Phân tích năm trụ cột & Quy trình nào cần có để quản lý lỗ hổng, đe dọa, log, sự cố và bản vá trên CPE, router, ONT? & Mô hình năm trụ cột có đầu vào, đầu ra, vai trò vận hành và điểm kiểm soát rõ ràng. \\ \hline
+Đánh giá khoảng trống & Những hạn chế nào khiến giải pháp hiện tại khó áp dụng ở quy mô nhà mạng? & Danh sách khoảng trống nghiên cứu và khuyến nghị triển khai cho thiết bị mới, thiết bị legacy và backend ISP. \\ \hline
+\end{tabular}
+\caption{Ánh xạ mục tiêu nghiên cứu với câu hỏi và kết quả kỳ vọng}
+\label{tab:research-objectives}
+\end{table}
+
+\section{Phạm vi và phương pháp thực hiện}
+Phạm vi báo cáo tập trung vào lớp thiết bị truy nhập băng rộng và IoT biên, bao gồm firmware thiết bị, dịch vụ mạng, giao diện quản trị, kênh quản lý từ xa, luồng log, nền tảng SIEM/SOC và pipeline OTA. Báo cáo không đi sâu vào thiết kế phần cứng vi mạch hoặc phân tích mã độc ở mức đảo ngược nhị phân chi tiết, mà tập trung vào quy trình quản lý an ninh có thể áp dụng trong tổ chức.
+
+Phương pháp thực hiện gồm đọc và tổng hợp tài liệu chuẩn, phân loại các bài báo trong tệp khảo sát nguồn theo năm trụ cột, xây dựng kiến trúc tham chiếu, mô hình hóa luồng dữ liệu, sau đó đề xuất quy trình tích hợp. Các nhận định được trình bày theo hướng phân tích kỹ thuật, nhấn mạnh đầu vào, đầu ra, công cụ, vai trò vận hành và hạn chế khi triển khai thực tế.
+
+Nguồn tài liệu nghiên cứu được xử lý theo ba bước. Bước thứ nhất là trích xuất thông tin chính từ 25 bài báo trong thư mục nguồn, gồm năm xuất bản, phương pháp, đầu vào, đầu ra và môi trường áp dụng. Bước thứ hai là gán mỗi bài vào một trong năm trụ cột để tránh khảo sát dàn trải. Bước thứ ba là so sánh kết quả của từng nhóm với bối cảnh CPE, router, ONT và backend ISP nhằm rút ra yêu cầu vận hành thực tế.
+
+\section{Cấu trúc báo cáo}
+Phần còn lại của báo cáo được tổ chức như sau. Chương 2 khảo sát chuẩn quốc tế, công trình nghiên cứu và yêu cầu an ninh của hệ thống IoT/băng rộng. Chương 3 trình bày nền tảng lý thuyết và công nghệ cho năm trụ cột quản lý an ninh. Chương 4 phân tích quy trình áp dụng cho kiến trúc tham chiếu, bao gồm luồng dữ liệu, ma trận rủi ro và kịch bản sự cố. Chương 5 đánh giá giải pháp hiện có và nêu các khoảng trống nghiên cứu. Chương 6 kết luận và đề xuất hướng phát triển.
+
+\end{document}

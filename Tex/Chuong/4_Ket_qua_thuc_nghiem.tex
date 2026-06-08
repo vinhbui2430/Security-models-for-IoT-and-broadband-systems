@@ -1,0 +1,94 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\section{Kiến trúc áp dụng}
+Để minh họa quy trình, báo cáo xét kiến trúc gồm ba miền: miền thuê bao, miền truy nhập và miền vận hành nhà mạng. Miền thuê bao có thiết bị IoT, máy người dùng, CPE/router và ONT. Miền truy nhập có OLT, mạng MAN và kênh quản trị thiết bị. Miền vận hành có ACS/USP, AAA, kho firmware, backend OSS/BSS, SIEM và SOC/NOC. Luồng dữ liệu chính gồm lưu lượng Internet của người dùng, luồng quản trị từ ACS đến CPE, luồng log từ thiết bị về SIEM và luồng OTA từ kho firmware đến thiết bị.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3cm}|p{4.5cm}|p{5.3cm}|}
+\hline
+\textbf{Miền} & \textbf{Thành phần chính} & \textbf{Rủi ro nổi bật} \\ \hline
+Thuê bao & Thiết bị IoT, máy người dùng, Wi-Fi, CPE/router, ONT. & Mật khẩu mặc định, cấu hình yếu, giao diện web lỗi, thiết bị nội bộ bị nhiễm mã độc. \\ \hline
+Truy nhập & OLT, mạng truy nhập, MAN, kênh WAN, DNS/NTP nhà mạng. & Dịch vụ quản trị lộ ra Internet, DDoS, sai cấu hình phân đoạn mạng. \\ \hline
+Vận hành nhà mạng & ACS/USP, AAA, OSS/BSS, kho firmware, SIEM, SOC/NOC. & Lạm dụng quyền quản trị, phát hành firmware sai, thiếu log, điều phối phản ứng chậm. \\ \hline
+\end{tabular}
+\caption{Ba miền trong kiến trúc tham chiếu}
+\label{tab:three-domains}
+\end{table}
+
+Thiết kế này cho phép áp dụng thống nhất năm trụ cột. Kiểm kê tài sản bắt đầu ở miền thuê bao nhưng cần metadata từ miền vận hành. Mô hình hóa mối đe dọa phải đi qua cả ba miền để thấy quan hệ giữa lỗi cục bộ trên CPE và tác động diện rộng đến hạ tầng. Log, phản ứng sự cố và bản vá đều phụ thuộc vào khả năng điều phối giữa ACS/USP, SIEM, SOC/NOC và kênh hỗ trợ khách hàng.
+
+\section{Áp dụng đánh giá lỗ hổng}
+Quy trình bắt đầu bằng kiểm kê tài sản. Mỗi thiết bị cần có hồ sơ gồm model, số serial, phiên bản firmware, địa chỉ quản trị, trạng thái hỗ trợ, dịch vụ mở và nhóm thuê bao. Sau đó, nhóm an ninh thực hiện quét mạng trong phạm vi được phép để phát hiện cổng mở và cấu hình yếu. Firmware được phân tích tĩnh để tìm thư viện lỗi thời, chuỗi mật khẩu mặc định, khóa riêng, script khởi động và endpoint ẩn. Với thiết bị phổ biến, firmware được giả lập để kiểm thử động các giao diện web và API.
+
+Kết quả được chấm ưu tiên theo công thức kết hợp CVSS, khả năng khai thác, số lượng thiết bị bị ảnh hưởng, mức phơi nhiễm WAN và tác động dịch vụ. Ví dụ, một CVE có CVSS cao nhưng chỉ tồn tại trong giao diện LAN có thể xếp sau một lỗi xác thực ACS ảnh hưởng hàng loạt CPE. Quyết định xử lý gồm vá firmware, thay đổi cấu hình, vô hiệu hóa dịch vụ, bổ sung rule IDS hoặc thay thế thiết bị.
+
+Một cách triển khai thực tế là chuẩn hóa điểm ưu tiên theo thang định tính. Lỗ hổng được xếp mức khẩn cấp khi có khai thác công khai, ảnh hưởng giao diện WAN hoặc ACS, và tồn tại trên số lượng lớn thiết bị. Lỗ hổng được xếp mức cao khi cần vá trong chu kỳ bảo trì gần nhất. Lỗ hổng mức trung bình hoặc thấp có thể xử lý bằng thay đổi cấu hình, giám sát bổ sung hoặc đưa vào lộ trình thay thế thiết bị legacy.
+
+\section{Áp dụng mô hình hóa mối đe dọa}
+Bảng \ref{tab:stride-example} minh họa cách ánh xạ STRIDE cho một số thành phần. Cách làm này giúp nhóm vận hành nhìn rõ mối đe dọa theo từng luồng dữ liệu thay vì chỉ liệt kê lỗi kỹ thuật rời rạc.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{2.7cm}|p{3.2cm}|p{5.9cm}|}
+\hline
+\textbf{Thành phần} & \textbf{Nhóm STRIDE} & \textbf{Kịch bản và kiểm soát} \\ \hline
+CPE/router & Spoofing, Elevation & Tấn công đăng nhập quản trị bằng mật khẩu mặc định; kiểm soát bằng mật khẩu ngẫu nhiên, MFA cho quản trị từ xa, khóa WAN admin. \\ \hline
+Kênh ACS/USP & Tampering, Information disclosure & Giả mạo máy chủ quản trị hoặc thay đổi cấu hình; kiểm soát bằng TLS hai chiều, pinning chứng chỉ, audit thay đổi. \\ \hline
+Kho firmware & Tampering, Repudiation & Thay thế gói OTA hoặc phủ nhận thao tác phát hành; kiểm soát bằng ký số, phân quyền, nhật ký bất biến. \\ \hline
+SIEM/SOC & Denial of service, Repudiation & Flood log làm mất cảnh báo hoặc xóa dấu vết; kiểm soát bằng rate limit, lưu trữ tập trung và phân quyền đọc/ghi. \\ \hline
+\end{tabular}
+\caption{Ví dụ ánh xạ STRIDE cho hệ thống IoT/băng rộng}
+\label{tab:stride-example}
+\end{table}
+
+\section{Áp dụng log và audit}
+Pipeline log đề xuất gồm ba lớp. Lớp thiết bị ghi nhận sự kiện cục bộ bằng syslog và gửi sự kiện nghiêm trọng về collector. Lớp vận hành chuẩn hóa log bằng định dạng chung, bổ sung metadata như model, firmware, khu vực mạng và nhóm thuê bao. Lớp phân tích đưa log vào SIEM để tương quan theo luật và học hành vi.
+
+Một luật phát hiện điển hình là: nếu nhiều CPE cùng model có số lần đăng nhập thất bại tăng đột biến, đồng thời xuất hiện kết nối ra ngoài đến cổng telnet hoặc IRC, SIEM tạo cảnh báo nghi ngờ botnet. Một luật khác là: nếu ACS thay đổi DNS hoặc mở WAN admin cho nhiều thiết bị ngoài cửa sổ bảo trì, sự kiện được nâng mức nghiêm trọng và yêu cầu xác minh người phê duyệt.
+
+\section{Kịch bản phản ứng sự cố điển hình}
+Kịch bản được chọn là botnet khai thác mật khẩu mặc định trên router và lan truyền qua telnet. Giai đoạn phát hiện bắt đầu khi SIEM ghi nhận lưu lượng quét cổng 23/2323 tăng, nhiều thiết bị gửi log đăng nhập thất bại và IDS phát hiện chuỗi lệnh tải mã độc. Giai đoạn phân tích xác định model bị ảnh hưởng, phiên bản firmware, khu vực mạng và IOC.
+
+Biện pháp ngăn chặn gồm chặn lưu lượng telnet từ WAN, đẩy cấu hình tắt telnet qua ACS, cô lập nhóm thiết bị phát tán lưu lượng bất thường và thông báo khách hàng nếu cần khởi động lại thiết bị. Giai đoạn xóa bỏ gồm cập nhật firmware, đổi mật khẩu quản trị, xóa tiến trình mã độc trong RAM bằng reboot an toàn và xác minh checksum firmware. Giai đoạn phục hồi theo dõi tỷ lệ thiết bị sạch, lưu lượng bất thường và phản hồi khách hàng. Cuối cùng, nhóm IRT cập nhật playbook, rule SIEM và tiêu chí kiểm thử firmware để tránh tái diễn.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{2.5cm}|p{5.1cm}|p{5.2cm}|}
+\hline
+\textbf{Giai đoạn} & \textbf{Hành động chính} & \textbf{Đầu ra cần ghi nhận} \\ \hline
+Phát hiện & Tương quan log đăng nhập thất bại, lưu lượng cổng 23/2323, IOC tải mã độc. & Ticket sự cố, danh sách model/firmware/khu vực bị ảnh hưởng. \\ \hline
+Phân tích & Xác minh mẫu lệnh, kiểm tra cấu hình telnet, đối chiếu CVE và mật khẩu mặc định. & Phạm vi sự cố, mức nghiêm trọng, quyết định kích hoạt IRT. \\ \hline
+Ngăn chặn & Chặn telnet từ WAN, đẩy cấu hình tắt telnet, cô lập thiết bị phát tán lưu lượng. & Danh sách thiết bị đã cô lập, thay đổi cấu hình, tác động dịch vụ. \\ \hline
+Xóa bỏ & Reboot an toàn, đổi mật khẩu, cập nhật firmware, xác minh checksum. & Thiết bị sạch, phiên bản firmware mới, log cập nhật thành công/thất bại. \\ \hline
+Phục hồi & Mở lại dịch vụ cần thiết, theo dõi lưu lượng, phản hồi khách hàng. & Chỉ số phục hồi, tỷ lệ tái nhiễm, báo cáo hậu sự cố. \\ \hline
+\end{tabular}
+\caption{Playbook rút gọn cho botnet lây lan qua telnet}
+\label{tab:telnet-botnet-playbook}
+\end{table}
+
+\section{Ma trận rủi ro và ưu tiên kiểm soát}
+Bảng \ref{tab:risk-matrix} trình bày ma trận rủi ro rút gọn. Ma trận này không thay thế đánh giá chi tiết nhưng hỗ trợ ưu tiên hành động trong môi trường nhiều thiết bị.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3.2cm}|p{2cm}|p{2cm}|p{5.2cm}|}
+\hline
+\textbf{Rủi ro} & \textbf{Khả năng} & \textbf{Tác động} & \textbf{Kiểm soát ưu tiên} \\ \hline
+RCE trên giao diện WAN của CPE & Cao & Rất cao & Vá khẩn cấp, chặn WAN admin, rule IDS, giám sát khai thác. \\ \hline
+Firmware OTA bị thay thế & Thấp--trung bình & Rất cao & Ký số, secure boot, phân quyền kho firmware, audit bất biến. \\ \hline
+Thiết bị legacy không còn hỗ trợ & Cao & Cao & Cách ly mạng, virtual patching, kế hoạch thay thế, giảm dịch vụ mở. \\ \hline
+Thiếu log trên ONT & Trung bình & Trung bình & Chuẩn hóa syslog tối thiểu, collector tập trung, đồng bộ thời gian. \\ \hline
+Lạm dụng tài khoản ACS & Trung bình & Rất cao & MFA, phân quyền theo vai trò, phê duyệt thay đổi hàng loạt, cảnh báo SIEM. \\ \hline
+\end{tabular}
+\caption{Ma trận rủi ro minh họa}
+\label{tab:risk-matrix}
+\end{table}
+
+\section{Tiêu chí đánh giá hiệu quả}
+Để đánh giá tính thực tiễn của quy trình, báo cáo sử dụng các tiêu chí định tính và định lượng. Nhóm tiêu chí phát hiện gồm tỷ lệ thiết bị có metadata đầy đủ, số lỗ hổng được xác minh và thời gian từ cảnh báo đến tạo ticket. Nhóm tiêu chí phản ứng gồm thời gian cô lập, thời gian khôi phục, tỷ lệ thiết bị tái nhiễm và số thay đổi cấu hình được audit đầy đủ. Nhóm tiêu chí bản vá gồm tỷ lệ cập nhật thành công, tỷ lệ rollback, số thiết bị legacy còn tồn tại và thời gian từ khi xác minh lỗ hổng đến khi phát hành OTA.
+
+Các tiêu chí này giúp liên kết Chương 4 với các khoảng trống ở Chương 5. Ví dụ, nếu tỷ lệ metadata firmware thấp, khoảng trống nằm ở kiểm kê tài sản và benchmark firmware. Nếu thời gian phản ứng dài dù SIEM có cảnh báo, vấn đề có thể nằm ở thiếu SOAR hoặc thiếu cơ chế phối hợp giữa SOC/NOC và helpdesk. Nếu tỷ lệ rollback cao, quy trình kiểm thử OTA và phân nhóm canary cần được cải thiện.
+
+\end{document}

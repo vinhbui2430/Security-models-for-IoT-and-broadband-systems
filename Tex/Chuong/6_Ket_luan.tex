@@ -1,0 +1,19 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\section{Kết luận}
+Báo cáo đã nghiên cứu quy trình quản lý an ninh cho hệ thống IoT và băng rộng với trọng tâm là CPE, router, ONT và backend ISP. Từ các chuẩn NIST SP 800-30, NIST SP 800-61, ISO/IEC 27035, MITRE ATT\&CK for IoT và các công trình khảo sát trong nguồn, báo cáo đã hệ thống hóa năm trụ cột: đánh giá lỗ hổng, mô hình hóa mối đe dọa, ghi nhật ký và kiểm toán, phản ứng sự cố, quản lý bản vá bảo mật.
+
+Kết quả cho thấy các trụ cột này có quan hệ phụ thuộc chặt chẽ. Đánh giá lỗ hổng cung cấp dữ liệu đầu vào cho quản lý bản vá; mô hình hóa mối đe dọa giúp giải thích mức độ ưu tiên của lỗ hổng; log và audit tạo năng lực phát hiện và bằng chứng; phản ứng sự cố xử lý rủi ro đang diễn ra; quản lý bản vá loại bỏ nguyên nhân gốc và giảm xác suất tái diễn. Đối với IoT và băng rộng, quy trình cần được thiết kế cho quy mô lớn, thiết bị tài nguyên hạn chế, firmware không đồng nhất và yêu cầu duy trì dịch vụ liên tục.
+
+Các nội dung đã phát triển cũng cho thấy việc quản lý an ninh không thể chỉ dựa trên một công cụ riêng lẻ. Một kiến trúc hiệu quả cần bắt đầu từ kiểm kê tài sản, gắn lỗ hổng với ngữ cảnh rủi ro, chuyển threat model thành yêu cầu log và playbook, sau đó dùng kết quả phản ứng sự cố để cập nhật lại quy trình vá và yêu cầu mua sắm thiết bị. Cách tiếp cận vòng đời khép kín này phù hợp với đặc thù nhà mạng vì vừa hỗ trợ tự động hóa, vừa giữ được kiểm soát đối với tác động dịch vụ.
+
+\section{Hạn chế}
+Báo cáo chủ yếu phân tích ở mức quy trình và kiến trúc, chưa triển khai phòng thí nghiệm thực nghiệm trên một model CPE hoặc ONT cụ thể. Một số bài báo trong nguồn là khảo sát hoặc đề xuất gần đây, vì vậy kết quả cần được kiểm chứng thêm bằng dữ liệu vận hành thực tế. Ngoài ra, báo cáo chưa đánh giá định lượng chi phí triển khai SIEM, OTA và thay thế thiết bị legacy.
+
+\section{Hướng phát triển}
+Hướng phát triển thứ nhất là xây dựng lab thử nghiệm gồm router mã nguồn mở, firmware mẫu, OpenVAS, môi trường giả lập firmware và SIEM để kiểm chứng quy trình. Hướng thứ hai là thiết kế bộ tiêu chí log tối thiểu cho CPE/ONT, có thể áp dụng trong yêu cầu mua sắm thiết bị. Hướng thứ ba là thử nghiệm mô hình tự động ưu tiên bản vá dựa trên CVSS, EPSS, mức phơi nhiễm và số lượng thuê bao bị ảnh hưởng. Hướng thứ tư là nghiên cứu playbook SOAR cho các sự cố IoT phổ biến như botnet, lộ ACS và lỗi OTA.
+
+Trong giai đoạn tiếp theo, báo cáo có thể mở rộng theo hướng thực nghiệm định lượng. Cụ thể, nhóm nghiên cứu có thể xây dựng bộ firmware benchmark có nhãn, triển khai mô hình lab gồm CPE--ACS--SIEM, mô phỏng botnet telnet và thử nghiệm quy trình OTA A/B có anti-rollback. Kết quả đo được như tỷ lệ phát hiện, thời gian phản ứng, tỷ lệ cập nhật thành công và số false positive sẽ giúp kiểm chứng các đề xuất ở mức vận hành thực tế.
+
+\end{document}

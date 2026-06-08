@@ -1,0 +1,53 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\section{Khung quản lý an ninh tích hợp}
+Đóng góp chính của báo cáo là đề xuất cách tích hợp năm trụ cột quản lý an ninh thành một vòng đời thống nhất cho IoT và băng rộng. Điểm khởi đầu là kiểm kê tài sản và mô hình hóa kiến trúc. Từ đó, đánh giá lỗ hổng cung cấp dữ liệu CVE/CVSS và tình trạng cấu hình; mô hình hóa mối đe dọa cung cấp ngữ cảnh rủi ro; log và audit cung cấp khả năng phát hiện và truy vết; phản ứng sự cố xử lý tình huống đang xảy ra; quản lý bản vá loại bỏ nguyên nhân gốc hoặc giảm rủi ro còn lại.
+
+Khung này tránh cách tiếp cận rời rạc. Ví dụ, một lỗ hổng RCE không chỉ được ghi vào danh sách CVE mà còn được ánh xạ vào luồng dữ liệu WAN, rule SIEM, playbook phản ứng và kế hoạch OTA. Ngược lại, một sự cố thực tế sau khi được xử lý sẽ cập nhật lại tiêu chí quét, mô hình đe dọa và yêu cầu log.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{3cm}|p{4.6cm}|p{5.2cm}|}
+\hline
+\textbf{Trụ cột tạo dữ liệu} & \textbf{Dữ liệu sinh ra} & \textbf{Trụ cột sử dụng dữ liệu} \\ \hline
+Đánh giá lỗ hổng & CVE, CVSS, firmware bị ảnh hưởng, dịch vụ phơi nhiễm. & Quản lý bản vá, mô hình hóa đe dọa, SIEM. \\ \hline
+Mô hình hóa đe dọa & DFD, ranh giới tin cậy, attack graph, kịch bản STRIDE. & Log/audit, phản ứng sự cố, ưu tiên kiểm soát. \\ \hline
+Log và audit & Cảnh báo, bằng chứng sự kiện, hành vi bất thường, lịch sử thay đổi. & Phản ứng sự cố, đánh giá lỗ hổng, kiểm toán OTA. \\ \hline
+Phản ứng sự cố & IOC, phạm vi ảnh hưởng, hành động cô lập, bài học sau sự cố. & Rule SIEM, yêu cầu vá, cập nhật threat model. \\ \hline
+Quản lý bản vá & Trạng thái OTA, tỷ lệ lỗi, rollback, thiết bị legacy. & Kiểm kê tài sản, đánh giá rủi ro còn lại, kế hoạch thay thế. \\ \hline
+\end{tabular}
+\caption{Luồng dữ liệu giữa năm trụ cột quản lý an ninh}
+\label{tab:integrated-pillars-flow}
+\end{table}
+
+\section{Đánh giá giải pháp hiện có}
+Các công cụ quét lỗ hổng như OpenVAS và Nessus có ưu điểm là tự động hóa tốt, cơ sở plugin phong phú và dễ tích hợp báo cáo. Tuy nhiên, chúng phụ thuộc nhiều vào banner, cấu hình mạng và chất lượng plugin. Với thiết bị nhúng, kết quả có thể thiếu chính xác nếu nhà sản xuất tùy biến dịch vụ hoặc backport bản vá. Do đó, quét mạng cần được bổ sung bằng phân tích firmware và kiểm thử động trong môi trường giả lập.
+
+Các khung mô hình hóa như STRIDE và PASTA giúp tổ chức suy nghĩ có hệ thống, nhưng yêu cầu thông tin kiến trúc cập nhật. Trong môi trường ISP có hàng triệu thiết bị, mô hình thủ công khó mở rộng. Hướng nghiên cứu tự động sinh attack graph từ cấu hình, topo và log là triển vọng nhưng vẫn cần dữ liệu chuẩn hóa và cơ chế kiểm chứng.
+
+SIEM và SOAR hỗ trợ phát hiện và phản ứng nhanh, nhưng hiệu quả phụ thuộc vào chất lượng log. Thiết bị IoT thường tạo log ít, không đồng nhất và dễ mất khi khởi động lại. Một số thiết bị không có đồng hồ thời gian chính xác hoặc không hỗ trợ mã sự kiện chuẩn. Vì vậy, cần định nghĩa bộ log tối thiểu theo loại thiết bị và kiểm thử khả năng log ngay từ giai đoạn lựa chọn nhà cung cấp.
+
+OTA an toàn là giải pháp căn bản cho vá lỗi quy mô lớn, nhưng cũng là bề mặt tấn công nhạy cảm. Nếu khóa ký bị lộ hoặc quy trình phát hành thiếu kiểm soát, OTA có thể trở thành kênh phát tán mã độc. Vì vậy, secure boot, ký số, anti-rollback, phân quyền phát hành và canary deployment phải được xem là yêu cầu bắt buộc.
+
+Từ góc nhìn áp dụng thực tế, không có công cụ đơn lẻ nào bao phủ toàn bộ vòng đời. Công cụ quét hỗ trợ phát hiện nhưng không thay thế kiểm kê và phân tích firmware. SIEM hỗ trợ cảnh báo nhưng không hiệu quả nếu thiết bị không sinh log phù hợp. OTA giúp vá lỗi hàng loạt nhưng cần quản trị khóa, kiểm thử và cơ chế phục hồi. Vì vậy, đóng góp của báo cáo nằm ở việc liên kết các giải pháp thành quy trình vận hành có phản hồi khép kín.
+
+\section{Khoảng trống nghiên cứu}
+Khoảng trống thứ nhất là thiếu bộ dữ liệu firmware có chất lượng và có nhãn chuẩn để đánh giá công cụ phát hiện lỗ hổng. Nhiều nghiên cứu gặp khó khăn vì firmware thu thập từ Internet có thể trùng lặp, thiếu metadata, bị đóng gói lạ hoặc không thể giả lập.
+
+Khoảng trống thứ hai là tự động hóa mô hình hóa mối đe dọa cho hệ thống quy mô lớn. Các phương pháp hiện có vẫn cần nhiều thao tác thủ công để cập nhật sơ đồ luồng dữ liệu và ranh giới tin cậy. Trong môi trường băng rộng, cấu hình thiết bị thay đổi liên tục theo vùng, nhà sản xuất và gói dịch vụ.
+
+Khoảng trống thứ ba là log và telemetry cho thiết bị tài nguyên hạn chế. Cần nghiên cứu định dạng log nhẹ, bảo đảm riêng tư, có khả năng nén, ký xác thực và gửi theo mức ưu tiên khi mạng không ổn định.
+
+Khoảng trống thứ tư là xử lý thiết bị legacy không thể vá. Các biện pháp bù trừ hiện tại như cách ly mạng và virtual patching chỉ giảm rủi ro, chưa giải quyết triệt để vấn đề vòng đời thiết bị dài hơn vòng đời hỗ trợ phần mềm.
+
+Khoảng trống thứ năm là phối hợp tự động giữa SOC, NOC, ACS và hệ thống chăm sóc khách hàng. Một quyết định cô lập thiết bị có thể làm giảm rủi ro an ninh nhưng ảnh hưởng trải nghiệm dịch vụ, do đó cần mô hình ra quyết định cân bằng giữa an toàn, tính sẵn sàng và chi phí vận hành.
+
+\section{Khuyến nghị triển khai}
+Đối với tổ chức vận hành mạng băng rộng, báo cáo khuyến nghị xây dựng baseline an ninh cho từng dòng thiết bị, bao gồm dịch vụ được phép mở, cấu hình mật khẩu, yêu cầu log, yêu cầu OTA và thời hạn hỗ trợ. Quy trình mua sắm thiết bị cần yêu cầu SBOM, secure boot, ký số firmware, cơ chế anti-rollback và khả năng gửi log chuẩn.
+
+Trong vận hành, tổ chức nên duy trì lịch quét định kỳ, kiểm thử firmware trước khi phát hành, cập nhật mô hình đe dọa khi thay đổi kiến trúc, thiết lập rule SIEM cho kịch bản IoT đặc thù và tổ chức diễn tập phản ứng sự cố. Với thiết bị legacy, cần lập danh sách ngoại lệ, áp dụng biện pháp bù trừ và có lộ trình thay thế rõ ràng.
+
+Các khuyến nghị cũng cần được đưa vào hợp đồng và tiêu chí nghiệm thu. Nhà cung cấp thiết bị nên cung cấp thời hạn hỗ trợ bảo mật tối thiểu, quy trình công bố lỗ hổng, SBOM, cơ chế ký firmware, tài liệu log sự kiện và khả năng tích hợp ACS/USP an toàn. Khi vận hành, ISP cần định kỳ rà soát quyền truy cập ACS, kiểm tra khóa ký, diễn tập rollback OTA và đo các chỉ số như thời gian phát hiện, thời gian khôi phục, tỷ lệ cập nhật thành công và số thiết bị không còn được hỗ trợ.
+
+\end{document}

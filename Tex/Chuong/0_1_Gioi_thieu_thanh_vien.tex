@@ -1,0 +1,55 @@
+\documentclass[../DoAn.tex]{subfiles}
+\pagenumbering{roman}
+
+\begin{document}
+\begin{center}
+    \textbf{DANH SÁCH THÀNH VIÊN VÀ PHÂN CHIA CÔNG VIỆC}
+\end{center}
+
+\begin{table}[H]
+\centering
+\small % Giữ kích thước chữ tiêu chuẩn học thuật
+
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3cm} >{\raggedright\arraybackslash}p{3cm} X}
+\toprule
+\textbf{Thành viên \& MSSV} & \textbf{Trụ cột / Trách nhiệm} & \textbf{Nội dung nghiên cứu trọng tâm} \\ 
+\midrule
+
+\textbf{Bùi Đức Công Vinh} \newline MSSV: 20210969 
+& Đánh giá lỗ hổng \newline (\textit{Vulnerability Assessment}) 
+& - Quy trình rà quét 5 bước. \newline
+  - Phân tích tĩnh/động firmware; giả lập phần cứng bằng FirmAE. \newline
+  - Khớp mờ lỗ hổng (\textit{Fuzzy CVE Matching}) qua NVD; định lượng CVSS/EPSS. \newline
+  - Nhận diện thư viện nguồn mở bằng AutoFirm. \\ \addlinespace[0.6em]
+
+\textbf{Nguyễn Đức Phúc} \newline MSSV: 20234032 
+& Mô hình hóa mối đe dọa \newline (\textit{Threat Modeling}) 
+& - Xây dựng sơ đồ luồng dữ liệu (DFD), xác định ranh giới tin cậy. \newline
+  - Định lượng rủi ro bằng STRIDE, PASTA, mô hình DREAD/SSVC. \newline
+  - Lập bản đồ chiến thuật tấn công theo khung \textit{MITRE ATT\&CK for IoT}. \newline
+  - Tự động hóa tạo đồ thị tấn công qua SMSI / TextCPR. \\ \addlinespace[0.6em]
+
+\textbf{Tạ Văn Việt} \newline MSSV: 20234050 
+& Ghi nhật ký và kiểm toán \newline (\textit{Logging and Audit}) 
+& - Thiết lập bộ log tối giản (syslog, auditd, TR-069) tối ưu băng thông. \newline
+  - Tương quan sự kiện qua SIEM (Splunk, Sentinel) và học máy (AI/LSTM). \newline
+  - Bảo toàn dữ liệu log bằng cây Merkle, Blockchain (DASLog) và Edge Gateway. \newline
+  - Xử lý log ẩn danh qua \textit{Federated RAG} tại biên. \\ \addlinespace[0.6em]
+
+\textbf{Trần Trung Hiếu} \newline MSSV: 20234010 
+& Phản ứng sự cố \newline (\textit{Incident Response}) 
+& - Chuẩn hóa quy trình ứng phó theo NIST SP 800-61 và ISO/IEC 27035. \newline
+  - Xây dựng kịch bản (Playbook) mẫu xử lý mã độc IoT (Botnet Mirai). \newline
+  - Tự động cô lập thiết bị bằng hệ thống SOAR tích hợp D3FEND / CACAO. \newline
+  - Tự động lập báo cáo sự cố bằng RAG-LLM; đánh giá hiện tượng ảo giác AI. \\ \addlinespace[0.6em]
+
+\textbf{Đỗ Hoàng Tùng} \newline MSSV: 20234045 
+& Quản lý bản vá \newline (\textit{Patch Management}) 
+& - Quy trình OTA tích hợp AES-GCM, chữ ký ECDSA và Secure Boot/TEE. \newline
+  - Duy trì tính khả dụng qua phân vùng A/B và chống hạ cấp (eFuse/RPMB). \newline
+  - Giảm tải tần suất cập nhật (\textit{patch fatigue}) nhờ kết hợp VEX và SBOM. \newline
+  - Kiến trúc cập nhật mô-đun (IMUP) và vá ảo cho thiết bị cũ. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+\end{document}

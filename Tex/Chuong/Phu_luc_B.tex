@@ -1,0 +1,14 @@
+\documentclass[../DoAn.tex]{subfiles}
+\begin{document}
+
+\section{Mẫu playbook phản ứng sự cố botnet IoT}
+\begin{enumerate}
+    \item \textbf{Kích hoạt}: SIEM phát hiện lưu lượng quét telnet/SSH bất thường từ nhiều thiết bị cùng model.
+    \item \textbf{Phân tích}: xác định IOC, phiên bản firmware, khu vực thuê bao và mức ảnh hưởng dịch vụ.
+    \item \textbf{Ngăn chặn}: chặn cổng bị lạm dụng, vô hiệu hóa quản trị từ WAN và cô lập nhóm thiết bị phát tán lưu lượng.
+    \item \textbf{Xóa bỏ}: khởi động lại thiết bị, đổi mật khẩu, cập nhật firmware và kiểm tra cấu hình sau phục hồi.
+    \item \textbf{Phục hồi}: theo dõi tỷ lệ thiết bị sạch, lưu lượng bất thường, ticket khách hàng và cảnh báo SIEM.
+    \item \textbf{Rút kinh nghiệm}: cập nhật rule phát hiện, baseline cấu hình và tiêu chí kiểm thử firmware.
+\end{enumerate}
+
+\end{document}
